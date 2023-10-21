@@ -1,0 +1,1 @@
+# Apps directory is for third-party django apps. For example: Django CMS, Django Haystack, and django-storages

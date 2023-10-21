@@ -1,0 +1,1 @@
+# Libs directory is for Python modules. For example: Boto, Requests, Twython, and Whoosh
