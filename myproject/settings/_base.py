@@ -15,6 +15,7 @@ import os
 from django.core.exceptions import ImproperlyConfigured
 import json
 import sys
+from myproject.apps.core.versoining import get_git_changes_timestamp
 
 with open(os.path.join(os.path.dirname(__file__), 'secrets.json'),'r') as f:
     secrets = json.loads(f.read())
@@ -138,7 +139,60 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 
-STATIC_URL = 'static/'
+'''
+When you use docker or heroku you dont have access to git reposotory or git in that case we will read a timestamp from
+the last_modified.txt which will be updated with each commit. So whenever you commit to the Git repository
+and will add that file to the Git index.
+### Code
+
+with open(os.path.join(BASE_DIR, 'myproject', 'settings', 'last-modified.txt'), 'r') as f:
+    timestamp = f.readline().strip(
+STATIC_URL = f'/static/{timestamp}/'
+
+
+Note: You also neet to modify the pre-commit in git. That is in .git/hooks/pre-commit
+### code for pre-commit
+
+#!/usr/bin/env python
+from subprocess import check_output, CalledProcessError
+import os
+from datetime import datetime
+
+def root():
+    "returns the absolute path of the repository root"
+    try:
+    base = check_output(['git', 'rev-parse', '--show-toplevel'])
+    except CalledProcessError:
+    raise IOError('Current working directory is not a git repository')
+    return base.decode('utf-8').strip()
+    
+def abspath(relpath):
+    "returns the absolute path for a path given relative to the root of the git repository"
+
+    return os.path.join(root(), relpath)
+    
+def add_to_git(file_path):
+    "adds a file to git "
+    try:
+    base = check_output(['git', 'add', file_path])
+    except CalledProcessError:
+    raise IOError('Current working directory is not a git repository')
+    return base.decode('utf-8').strip()
+    
+def main():
+    file_path = abspath("myproject/settings/last-update.txt")
+    with open(file_path, 'w') as f:
+    f.write(datetime.now().strftime("%Y%m%d%H%M%S"))
+    add_to_git(file_path)
+    
+if __name__ == '__main__':
+    main()
+
+'''
+
+# Set dynamic static url
+timestamp = get_git_changes_timestamp(BASE_DIR)
+STATIC_URL = f'/static/{timestamp}/'
 STATIC_ROOT = BASE_DIR /'static'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'myproject', 'site_static'),
